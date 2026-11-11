@@ -22,9 +22,6 @@ wbaila dongniao --image photo.jpg
 Python 3.13+ is required; uv fetches a matching interpreter automatically if missing.
 (pipx or a plain `pip install wbaila` work too.)
 
-> Changed in 0.2.0: the image is now passed with `--image` (previously a positional
-> argument), and a new `--clipboard` source was added.
-
 ## Image sources
 
 `--image PATH` and `--clipboard` are mutually exclusive; one of them is required.
@@ -69,6 +66,7 @@ HHODATA_API_BASE=https://my-relay.example/relay/hhodata \
 --clipboard, -c       read the image from the system clipboard (required unless --image)
 --class BM            animal classes: B(bird)/M(mammal)/A(amphibian)/R(reptile), any combination (default: BM)
 --area CODE           area code to filter results (optional)
+                      see https://ai.open.hhodata.com/area-code/ for the full list
 --did ID              unique device/client ID, alphanumeric (optional)
 --interval SECONDS    polling interval (default: 2)
 --max-retries N       maximum number of polls (default: 30)
