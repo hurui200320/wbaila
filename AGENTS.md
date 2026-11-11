@@ -13,7 +13,8 @@ WAILA-style "what am I looking at" tool family for birds and wildlife.
   will get their own subdirectories, each as an independent project
   with its own `AGENTS.md`.
 - CI lives in `.github/workflows/`: `test.yml` (checks on push/PR)
-  and `release.yml` (PyPI publish, tag-triggered only).
+  and `release.yml` (PyPI publish + GitHub release, tag-triggered
+  only).
 
 ## Versioning & releases
 
@@ -32,10 +33,23 @@ WAILA-style "what am I looking at" tool family for birds and wildlife.
      `cli/uv.lock` records the new version; commit both.
   2. Run the full check suite from `cli/AGENTS.md` plus `uv build`.
   3. Commit, tag the release commit `vX.Y.Z`, and push with the tag.
-  4. `.github/workflows/release.yml` builds and publishes to PyPI
-     via Trusted Publisher (OIDC; no stored secrets). If it fails
-     after tagging, fix, delete and re-create the tag — PyPI rejects
-     re-uploading an existing version.
+  4. `.github/workflows/release.yml` builds, publishes to PyPI via
+     Trusted Publisher (OIDC; no stored secrets), and creates the
+     GitHub Release, with notes generated from the commit log since
+     the previous tag. If it fails after tagging, fix, delete and
+     re-create the tag — PyPI rejects re-uploading an existing
+     version.
+- Commit messages follow Conventional Commits (the commitizen
+  format): `type(scope): subject`. Types: `feat`, `fix`, `docs`,
+  `refactor`, `perf`, `test`, `build`, `ci`, `chore`, `revert`; the
+  scope names the area touched (e.g. `imageprep`, `dongniao`,
+  `clipread`, `release`). The subject must say what actually
+  changed — a bare `refactor` or `update` is not a message. Mark
+  breaking changes with `!` (e.g. `feat(cli)!: drop the --raw flag`).
+- The same messages drive releases: the release workflow turns the
+  `git log` between tags into the GitHub Release body, and the type
+  suggests the version bump — `feat` → minor, `fix`/`perf` → patch,
+  `!` or a `BREAKING CHANGE:` footer → major (minor while 0.x).
 - CI split: the test workflow has no publish rights; only the
   tag-triggered release workflow publishes, and its publish job must
   stay minimal (download artifacts + `pypa/gh-action-pypi-publish`).

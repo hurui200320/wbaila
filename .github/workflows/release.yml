@@ -1,8 +1,9 @@
 name: Release
 
-# Publishes to PyPI via Trusted Publisher (OIDC; no stored secrets).
-# Triggered only by v* tags, which only maintainers can push; pull
-# requests can never reach this workflow. The publish job only
+# Publishes to PyPI via Trusted Publisher (OIDC; no stored secrets)
+# and creates a GitHub release with notes generated from the commit
+# log. Triggered only by v* tags, which only maintainers can push;
+# pull requests can never reach this workflow. The publish job only
 # downloads artifacts and calls pypa/gh-action-pypi-publish, per
 # PyPI's security recommendations.
 
@@ -60,3 +61,66 @@ jobs:
           name: dist
           path: dist/
       - uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
+
+  github-release:
+    name: Create GitHub release
+    # Runs only after a successful PyPI publish, so the release page
+    # never advertises a version that is not actually on PyPI.
+    needs: publish
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # create the release and upload assets
+    defaults:
+      run:
+        working-directory: . # repo root, unlike the workflow default
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0 # full history and tags, for the changelog range
+      - uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
+        with:
+          name: dist
+          path: dist/
+
+      - name: Generate release notes from the commit log
+        run: |
+          tag="${GITHUB_REF_NAME#v}"
+          previous_tag="$(git describe --tags --abbrev=0 "${GITHUB_REF_NAME}^" 2>/dev/null || true)"
+          if [ -n "$previous_tag" ]; then
+            range="$previous_tag..$GITHUB_REF_NAME"
+          else
+            range="$GITHUB_REF_NAME"
+          fi
+          {
+            echo "Install this release:"
+            echo
+            echo '```bash'
+            echo "uvx wbaila@$tag <backend> ..."
+            echo '```'
+            echo
+            echo "PyPI: https://pypi.org/project/wbaila/$tag/"
+            echo
+            echo "## What's Changed"
+            echo
+            git log --reverse --no-merges \
+              --format="- %s ([%h](https://github.com/$GITHUB_REPOSITORY/commit/%H))" \
+              "$range"
+            echo
+            if [ -n "$previous_tag" ]; then
+              echo "**Full Changelog**: https://github.com/$GITHUB_REPOSITORY/compare/$previous_tag...$GITHUB_REF_NAME"
+            fi
+          } > release_notes.md
+          cat release_notes.md
+
+      - name: Create the GitHub release
+        env:
+          GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
+        run: |
+          title="wbaila $GITHUB_REF_NAME"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            gh release edit "$GITHUB_REF_NAME" --title "$title" --notes-file release_notes.md
+            gh release upload "$GITHUB_REF_NAME" dist/* --clobber
+          else
+            gh release create "$GITHUB_REF_NAME" --title "$title" --notes-file release_notes.md dist/*
+          fi
