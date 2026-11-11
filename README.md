@@ -11,6 +11,15 @@ pluggable identification backends, one subcommand each:
 uvx wbaila dongniao photo.jpg
 ```
 
+## LLM usage transparency
+
+This repo is built by using LLM exclusively. I don't like python and I don't have any plan to learn it.
+However, it is the most convenient way to run stuff (thanks to `uvx`). As a matured developer, I choose
+whatever fits the best and let LLM handles the coding.
+
+And I also don't like vibe coding as it only delivers AI slops. So I will do my best to not turn this
+repo into AI slop. However, if you're AIphobia or antiAI person, feel free to hit Ctrl+W now.
+
 ## Backends
 
 | backend     | input | service                                                            |
