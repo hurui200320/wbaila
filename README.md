@@ -43,6 +43,7 @@ HHODATA_API_BASE=http://10.233.1.8:8002/relay/hhodata \
 
 # Windows PowerShell:
 #   $env:HHODATA_API_KEY = "xxxx"; uvx wbaila dongniao photo.jpg
+#   $env:HHODATA_API_BASE = "http://10.233.1.8:8002/relay/hhodata"; uvx wbaila dongniao photo.jpg
 ```
 
 Options: `--class BM` (B bird / M mammal / A amphibian / R reptile), `--area CODE` (region filter),
