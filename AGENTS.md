@@ -12,6 +12,36 @@ WAILA-style "what am I looking at" tool family for birds and wildlife.
 - Future agent-facing helpers (skills, MCP servers, agent tooling)
   will get their own subdirectories, each as an independent project
   with its own `AGENTS.md`.
+- CI lives in `.github/workflows/`: `test.yml` (checks on push/PR)
+  and `release.yml` (PyPI publish, tag-triggered only).
+
+## Versioning & releases
+
+- Semantic versioning: `MAJOR.MINOR.PATCH`. While the project is 0.x
+  (Development Status :: 4 - Beta), the minor digit carries breaking
+  changes (0.2 → 0.3 may break the CLI contract) and the patch digit
+  is fixes only; bump to 1.0.0 once the CLI contract is considered
+  stable, after which major = breaking, minor = features, patch =
+  fixes.
+- The single source of truth for the version is `version` in
+  `cli/pyproject.toml`. Release tags are `vX.Y.Z` and must match it
+  exactly; the release workflow refuses to publish on mismatch.
+- Releases are tag-driven from `master` (trunk-based; no release
+  branches):
+  1. Bump with `uv version X.Y.Z` in `cli/`, then run `uv sync` so
+     `cli/uv.lock` records the new version; commit both.
+  2. Run the full check suite from `cli/AGENTS.md` plus `uv build`.
+  3. Commit, tag the release commit `vX.Y.Z`, and push with the tag.
+  4. `.github/workflows/release.yml` builds and publishes to PyPI
+     via Trusted Publisher (OIDC; no stored secrets). If it fails
+     after tagging, fix, delete and re-create the tag — PyPI rejects
+     re-uploading an existing version.
+- CI split: the test workflow has no publish rights; only the
+  tag-triggered release workflow publishes, and its publish job must
+  stay minimal (download artifacts + `pypa/gh-action-pypi-publish`).
+  Never attach publishing to PR-triggered workflows.
+- All `uses:` actions in workflows are pinned to commit SHAs (with a
+  version comment); bump them deliberately, not passively.
 
 ## Repo-wide rules
 
