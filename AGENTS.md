@@ -70,4 +70,9 @@ WAILA-style "what am I looking at" tool family for birds and wildlife.
   logos into this repository.
 - `cli/uv.lock` is committed; keep it in sync with
   `cli/pyproject.toml` (`uv sync` after any dependency change).
+- Git safety: in the main worktree, before running any non-readonly
+  git operation (`commit`, `tag`, `push`, `merge`, `rebase`,
+  `reset`, `clean`, ...), confirm with the user first and only
+  proceed after explicit approval. Read-only commands (`status`,
+  `log`, `diff`, `show`) need no confirmation.
 - License: AGPL-3.0 (see `LICENSE`).
