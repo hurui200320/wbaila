@@ -9,7 +9,7 @@ This module is a pure library layer: any local failure raises
 Backends catch it and translate the message into their own output
 contract (see the `fail()` helper in `dongniao.py`).
 
-Dependencies: Python 3.13 standard library + Pillow (declared in
+Dependencies: Python 3.14 standard library + Pillow (declared in
 pyproject.toml; a missing Pillow surfaces as a normal ImportError).
 
 Code style: see cli/AGENTS.md (pyright strict, ruff check + ruff format).

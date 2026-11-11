@@ -9,7 +9,7 @@ consider a change done.
 
 - This directory is an independent `uv` project: the `wbaila` package,
   published to PyPI and normally invoked as `uvx wbaila <backend> ...`.
-- Python 3.13+. Prefer the standard library; Pillow is allowed for
+- Python 3.14+. Prefer the standard library; Pillow is allowed for
   image work (and is the only runtime dependency). numpy is a
   **dev-only** dependency: pillow's annotations define `NumpyArray`
   under `TYPE_CHECKING`, so pyright needs numpy importable in the
@@ -85,7 +85,7 @@ so run `uv sync` once after cloning or after dependency changes.
 
 ## Lint & format — ruff
 
-Configured in `ruff.toml` (line length 88, `target-version = "py313"`,
+Configured in `ruff.toml` (line length 88, `target-version = "py314"`,
 rules `E4/E7/E9/F + UP + ISC`). ruff is not installed locally; run it
 through `uvx ruff`.
 

@@ -7,7 +7,7 @@ name = "wbaila"
 version = "0.2.0"
 description = "WBAILA — What Bird Am I Looking At? A WAILA-style bird and wildlife ID CLI."
 readme = "README.md"
-requires-python = ">=3.13"
+requires-python = ">=3.14"
 license = "AGPL-3.0-only"
 authors = [{ name = "hurui200320" }]
 keywords = [
@@ -26,7 +26,7 @@ classifiers = [
   "Intended Audience :: Science/Research",
   "Operating System :: OS Independent",
   "Programming Language :: Python :: 3",
-  "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
   "Topic :: Scientific/Engineering",
   "Topic :: Utilities",
 ]

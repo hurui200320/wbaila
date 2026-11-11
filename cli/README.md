@@ -19,7 +19,7 @@ uv tool install wbaila
 wbaila dongniao --image photo.jpg
 ```
 
-Python 3.13+ is required; uv fetches a matching interpreter automatically if missing.
+Python 3.14+ is required; uv fetches a matching interpreter automatically if missing.
 (pipx or a plain `pip install wbaila` work too.)
 
 ## Image sources

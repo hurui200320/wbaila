@@ -20,7 +20,7 @@ failure raises `ImageError` and never touches stdout or the process
 exit code. Backends catch it and translate the message into their own
 output contract (see the `fail()` helper in `dongniao.py`).
 
-Dependencies: Python 3.13 standard library + Pillow (declared in
+Dependencies: Python 3.14 standard library + Pillow (declared in
 pyproject.toml).
 
 Code style: see cli/AGENTS.md (pyright strict, ruff check + ruff format).

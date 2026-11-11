@@ -17,7 +17,7 @@ where `code` is the API business code (1000 = success), or 0 for local /
 HTTP-level failures with an English error message as the payload. This
 keeps the output safe to pipe into tools like jq.
 
-Dependencies: Python 3.13 standard library + Pillow (declared in
+Dependencies: Python 3.14 standard library + Pillow (declared in
 pyproject.toml).
 
 Environment variables:
@@ -150,7 +150,7 @@ def expect_pair(payload: Any, http_status: int, action: str) -> tuple[int, Any]:
     try:
         code, data = payload
         valid = isinstance(code, int)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         valid = False
     if not valid:
         fail(
