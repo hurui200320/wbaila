@@ -1,11 +1,13 @@
 """Dongniao (懂鸟) animal recognition backend for WBAILA.
 
-Pipeline: preprocess the image locally with wbaila.imageprep (EXIF
-orientation fix, JPEG conversion, optional resizing to meet the API
-limits of 11~8192 px per edge and <= 2MB) -> submit the recognition
-task -> poll for the result -> print exactly one JSON document to
-stdout. Preprocessing failures raise `wbaila.imageprep.ImageError`,
-which `run()` maps onto the local-error output below.
+Pipeline: fetch the image from --image (file) or --clipboard (system
+clipboard, see wbaila.clipread), preprocess it locally with
+wbaila.imageprep (EXIF orientation fix, JPEG conversion, optional
+resizing to meet the API limits of 11~8192 px per edge and <= 2MB) ->
+submit the recognition task -> poll for the result -> print exactly
+one JSON document to stdout. Preprocessing failures raise
+`wbaila.imageprep.ImageError`, which `run()` maps onto the local-error
+output below.
 
 stdout always carries a single JSON array in the API's own shape:
 
@@ -28,12 +30,16 @@ Exit codes: 0 = got a recognition result (code 1000); 1 = API-level
 business error or polling timeout; 2 = local or network error.
 
 Examples:
+    # Identify whatever is currently on the clipboard (crop in your
+    # editor, copy, then run)
+    uvx wbaila dongniao --clipboard
+
     # Through a bifrost relay (no api key needed)
     HHODATA_API_BASE=http://10.233.1.8:8002/relay/hhodata \\
-        uvx wbaila dongniao ~/Pictures/DSC_3006_DxO.png --class BM
+        uvx wbaila dongniao --image ~/Pictures/DSC_3006_DxO.png --class BM
 
     # Direct against the official API (api key required)
-    HHODATA_API_KEY=xxxx uvx wbaila dongniao photo.jpg
+    HHODATA_API_KEY=xxxx uvx wbaila dongniao --image photo.jpg
 
 Code style: see cli/AGENTS.md (pyright strict, ruff check + ruff format).
 """
@@ -49,7 +55,7 @@ import urllib.request
 import uuid
 from typing import Any, NoReturn
 
-from wbaila import imageprep
+from wbaila import clipread, imageprep
 
 DEFAULT_API_BASE = "https://ai.open.hhodata.com/api/v2"
 ENV_API_KEY = "HHODATA_API_KEY"
@@ -210,7 +216,15 @@ def register(
         description="Dongniao (懂鸟) animal recognition API client: preprocess "
         "the image, submit it, poll and print the final JSON.",
     )
-    parser.add_argument("image", help="path of the image to recognize")
+    group = parser.add_mutually_exclusive_group(required=True)
+    group.add_argument("--image", help="path of the image file to recognize")
+    group.add_argument(
+        "-c",
+        "--clipboard",
+        action="store_true",
+        help="read the image from the system clipboard instead of a file "
+        "(Linux needs xclip or wl-clipboard installed)",
+    )
     parser.add_argument(
         "--class",
         dest="animal_class",
@@ -254,7 +268,12 @@ def run(args: argparse.Namespace) -> int:
     headers: dict[str, str] = {"api_key": api_key} if api_key else {}
 
     try:
-        im = imageprep.load_rgb(args.image)
+        if args.clipboard:
+            im = clipread.grab_image()
+        elif args.image:
+            im = imageprep.load_rgb(args.image)
+        else:  # unreachable: argparse enforces one of --image/--clipboard
+            fail("either --image or --clipboard is required")
         jpeg_bytes, _, _ = imageprep.prepare_image(im, imageprep.Constraints())
     except imageprep.ImageError as exc:
         fail(str(exc))

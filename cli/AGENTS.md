@@ -27,6 +27,11 @@ consider a change done.
   `ImageError` and never touches stdout, exit codes, or argparse.
   Backends catch `ImageError` and map the message onto the standard
   `[0, "<message>"]` output via `fail()`.
+- Shared clipboard grabbing lives in `src/wbaila/clipread.py` (the
+  `--clipboard` input source; wraps `PIL.ImageGrab.grabclipboard`
+  with a macOS TIFF/JPEG fallback and Windows file-path handling).
+  Same library-layer contract as `imageprep.py`: raises `ImageError`
+  only, no stdout/exit-code side effects.
 - Cross-backend helpers (e.g. `fail()`) currently live in
   `dongniao.py`; factor them into a shared module when the second
   backend actually needs them.
@@ -108,7 +113,7 @@ uv run python -m unittest discover -s tests   # imageprep unit tests pass
 Plus a smoke test of the failure paths (does not consume API quota):
 
 ```bash
-uv run wbaila dongniao /nonexistent.jpg
+uv run wbaila dongniao --image /nonexistent.jpg
 # -> [0, "image file not found: ..."] on stdout, exit code 2
 ```
 

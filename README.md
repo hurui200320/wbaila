@@ -8,7 +8,7 @@ Identify an animal from a photo (and, over time, more input types) via
 pluggable identification backends, one subcommand each:
 
 ```bash
-uvx wbaila dongniao photo.jpg
+uvx wbaila dongniao --image photo.jpg
 ```
 
 ## LLM usage transparency
@@ -35,19 +35,24 @@ the output is `jq`-friendly.
 
 ```bash
 # Direct, with your own API key (the platform offers free test quota):
-HHODATA_API_KEY=xxxx uvx wbaila dongniao photo.jpg
+HHODATA_API_KEY=xxxx uvx wbaila dongniao --image photo.jpg
 
 # Or through a local relay that injects the key:
 HHODATA_API_BASE=http://10.233.1.8:8002/relay/hhodata \
-    uvx wbaila dongniao photo.png --class BM
+    uvx wbaila dongniao --image photo.png --class BM
+
+# Identify what is on the clipboard: crop in your editor, copy, run
+uvx wbaila dongniao --clipboard
 
 # Windows PowerShell:
-#   $env:HHODATA_API_KEY = "xxxx"; uvx wbaila dongniao photo.jpg
-#   $env:HHODATA_API_BASE = "http://10.233.1.8:8002/relay/hhodata"; uvx wbaila dongniao photo.jpg
+#   $env:HHODATA_API_KEY = "xxxx"; uvx wbaila dongniao --image photo.jpg
+#   $env:HHODATA_API_BASE = "http://10.233.1.8:8002/relay/hhodata"; uvx wbaila dongniao --image photo.jpg
 ```
 
-Options: `--class BM` (B bird / M mammal / A amphibian / R reptile), `--area CODE` (region filter),
-`--did ID` (client ID), `--interval` and `--max-retries` (polling).
+Options: `--image PATH` / `--clipboard` (`-c`) pick the input, exactly one is required
+(Windows and macOS work out of the box; Linux needs `xclip` or `wl-clipboard` installed),
+plus `--class BM` (B bird / M mammal / A amphibian / R reptile), `--area CODE` (region
+filter), `--did ID` (client ID), `--interval` and `--max-retries` (polling).
 
 Exit codes: `0` success, `1` API-level business error, `2` local or network error. See `cli/README.md`
 for the full reference.

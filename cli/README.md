@@ -9,28 +9,54 @@ The first backend is `dongniao`: an unofficial client for the Dongniao (懂鸟) 
 With [uv](https://docs.astral.sh/uv/) installed, no project setup is needed:
 
 ```bash
-uvx wbaila dongniao photo.jpg
+uvx wbaila dongniao --image photo.jpg
 ```
 
 Or install it as a persistent tool:
 
 ```bash
 uv tool install wbaila
-wbaila dongniao photo.jpg
+wbaila dongniao --image photo.jpg
 ```
 
 Python 3.13+ is required; uv fetches a matching interpreter automatically if missing.
 (pipx or a plain `pip install wbaila` work too.)
 
+> Changed in 0.2.0: the image is now passed with `--image` (previously a positional
+> argument), and a new `--clipboard` source was added.
+
+## Image sources
+
+`--image PATH` and `--clipboard` are mutually exclusive; one of them is required.
+
+```bash
+# Identify an image file:
+uvx wbaila dongniao --image photo.jpg
+
+# Identify whatever is on the clipboard — crop in your editor, copy, run:
+uvx wbaila dongniao --clipboard
+# (short form: -c)
+```
+
+Clipboard notes per platform:
+
+- **Windows** — works out of the box (PNG/DIB data; copying files in Explorer also
+  works, the copied image file is loaded).
+- **macOS** — works out of the box; apps that only offer TIFF/JPEG on the clipboard
+  (Preview, Firefox, MS Office, ...) are handled by a fallback.
+- **Linux** — needs one helper tool installed: `xclip` (X11) or `wl-clipboard`
+  (Wayland), e.g. `sudo apt install xclip` or `sudo pacman -S wl-clipboard`.
+  Headless sessions without a display have no clipboard.
+
 ## Authentication
 
 ```bash
 # Direct, with your own API key:
-HHODATA_API_KEY=xxxx uvx wbaila dongniao photo.jpg
+HHODATA_API_KEY=xxxx uvx wbaila dongniao --image photo.jpg
 
 # Or through a relay that injects the key:
 HHODATA_API_BASE=https://my-relay.example/relay/hhodata \
-    uvx wbaila dongniao photo.jpg
+    uvx wbaila dongniao --image photo.jpg
 ```
 
 - `HHODATA_API_KEY` — API key from the HHOLOVE AI Open Platform; the header is skipped when unset or empty.
@@ -39,7 +65,8 @@ HHODATA_API_BASE=https://my-relay.example/relay/hhodata \
 ## Options
 
 ```text
-image                 path of the image to recognize
+--image PATH          path of the image file to recognize (required unless --clipboard)
+--clipboard, -c       read the image from the system clipboard (required unless --image)
 --class BM            animal classes: B(bird)/M(mammal)/A(amphibian)/R(reptile), any combination (default: BM)
 --area CODE           area code to filter results (optional)
 --did ID              unique device/client ID, alphanumeric (optional)
