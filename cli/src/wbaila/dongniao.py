@@ -1,9 +1,11 @@
 """Dongniao (懂鸟) animal recognition backend for WBAILA.
 
-Pipeline: preprocess the image locally (EXIF orientation fix, JPEG
-conversion, optional resizing to meet the API limits of 11~8192 px per
-edge and <= 2MB) -> submit the recognition task -> poll for the result
--> print exactly one JSON document to stdout.
+Pipeline: preprocess the image locally with wbaila.imageprep (EXIF
+orientation fix, JPEG conversion, optional resizing to meet the API
+limits of 11~8192 px per edge and <= 2MB) -> submit the recognition
+task -> poll for the result -> print exactly one JSON document to
+stdout. Preprocessing failures raise `wbaila.imageprep.ImageError`,
+which `run()` maps onto the local-error output below.
 
 stdout always carries a single JSON array in the API's own shape:
 
@@ -37,7 +39,6 @@ Code style: see cli/AGENTS.md (pyright strict, ruff check + ruff format).
 """
 
 import argparse
-import io
 import json
 import os
 import sys
@@ -48,15 +49,12 @@ import urllib.request
 import uuid
 from typing import Any, NoReturn
 
+from wbaila import imageprep
+
 DEFAULT_API_BASE = "https://ai.open.hhodata.com/api/v2"
 ENV_API_KEY = "HHODATA_API_KEY"
 ENV_API_BASE = "HHODATA_API_BASE"
 
-MIN_EDGE = 11  # API requirement: minimum pixels per edge
-MAX_EDGE = 8192  # API requirement: maximum pixels per edge
-MAX_BYTES = 2_000_000  # API limit is 2MB; keep a small margin
-JPEG_QUALITIES = (90, 85, 80, 75, 70, 60, 50, 40, 30)
-SHRINK_FACTOR = 0.8  # edge scale-down factor when still over 2MB
 HTTP_TIMEOUT = 60  # per-request timeout in seconds
 
 CODE_OK = 1000  # task accepted / result ready
@@ -71,91 +69,6 @@ def fail(message: str, exit_code: int = 2) -> NoReturn:
     """
     print(json.dumps([0, message], ensure_ascii=False, indent=2))
     sys.exit(exit_code)
-
-
-try:
-    from PIL import Image, ImageOps
-except ImportError:
-    fail(
-        "Pillow is missing; install the distro package python3-pil / "
-        "python3-pillow (or: pip install pillow)"
-    )
-
-# ---------------------------------------------------------------- image prep
-
-
-def load_rgb_image(path: str) -> Image.Image:
-    """Open the image, fix EXIF orientation, convert to RGB.
-
-    Returns an image object that no longer depends on the file handle.
-    """
-    try:
-        src = Image.open(path)
-    except FileNotFoundError:
-        fail(f"image file not found: {path}")
-    except OSError as exc:
-        fail(f"cannot open image {path}: {exc}")
-    with src:
-        im = ImageOps.exif_transpose(src)
-        if im.mode != "RGB":
-            im = im.convert("RGB")
-        if im is src:
-            # exif_transpose may return the original object when nothing
-            # needs transposing; copy to detach from the file handle
-            im = src.copy()
-    return im
-
-
-def fit_edges(im: Image.Image) -> Image.Image:
-    """Clamp every edge into the 11~8192 px range (aspect ratio kept).
-
-    Oversized images are scaled down so the longest edge is 8192 px;
-    undersized ones are scaled up so the shortest edge is 11 px.
-    """
-    width, height = im.size
-    longest, shortest = max(width, height), min(width, height)
-    if longest > MAX_EDGE and shortest < MIN_EDGE:
-        fail(
-            f"image {width}x{height} cannot fit the {MIN_EDGE}~{MAX_EDGE} px "
-            "requirement"
-        )
-    if longest > MAX_EDGE:
-        factor = MAX_EDGE / longest
-    elif shortest < MIN_EDGE:
-        factor = MIN_EDGE / shortest
-    else:
-        return im
-    new_size = (round(width * factor), round(height * factor))
-    if min(new_size) < MIN_EDGE or max(new_size) > MAX_EDGE:
-        fail(
-            f"extreme aspect ratio ({width}x{height}) cannot fit the "
-            f"{MIN_EDGE}~{MAX_EDGE} px requirement"
-        )
-    return im.resize(new_size, Image.Resampling.LANCZOS)
-
-
-def encode_jpeg(im: Image.Image) -> tuple[bytes, int, tuple[int, int]]:
-    """Encode as JPEG under 2MB: step down quality first, then shrink."""
-    while True:
-        for quality in JPEG_QUALITIES:
-            buffer = io.BytesIO()
-            im.save(buffer, "JPEG", quality=quality, optimize=True)
-            data = buffer.getvalue()
-            if len(data) <= MAX_BYTES:
-                return data, quality, im.size
-        width, height = im.size
-        new_size = (round(width * SHRINK_FACTOR), round(height * SHRINK_FACTOR))
-        if min(new_size) < MIN_EDGE:
-            fail(
-                "cannot get the image under 2MB even at the minimum size; "
-                "please shrink it manually"
-            )
-        im = im.resize(new_size, Image.Resampling.LANCZOS)
-
-
-def prepare_image(path: str) -> tuple[bytes, int, tuple[int, int]]:
-    """Return (jpeg_bytes, quality, (width, height)) ready for upload."""
-    return encode_jpeg(fit_edges(load_rgb_image(path)))
 
 
 # ---------------------------------------------------------------- HTTP layer
@@ -340,7 +253,11 @@ def run(args: argparse.Namespace) -> int:
     api_key = os.environ.get(ENV_API_KEY, "").strip()
     headers: dict[str, str] = {"api_key": api_key} if api_key else {}
 
-    jpeg_bytes, _, _ = prepare_image(args.image)
+    try:
+        im = imageprep.load_rgb(args.image)
+        jpeg_bytes, _, _ = imageprep.prepare_image(im, imageprep.Constraints())
+    except imageprep.ImageError as exc:
+        fail(str(exc))
     code, data = upload_image(url, headers, jpeg_bytes, args)
     if code == CODE_OK:
         code, data = poll_result(url, headers, data, args.interval, args.max_retries)

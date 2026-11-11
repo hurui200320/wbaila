@@ -21,9 +21,18 @@ consider a change done.
   - `run(args)`: the workflow, returning the process exit code.
   New backends must be registered in `__main__.py:build_parser` under a
   subcommand named after the service (e.g. `inaturalist`).
+- Shared image preprocessing lives in `src/wbaila/imageprep.py`
+  (loading with EXIF fix + RGB conversion, edge fitting, JPEG encoding
+  under size limits). It is a pure library layer: it raises
+  `ImageError` and never touches stdout, exit codes, or argparse.
+  Backends catch `ImageError` and map the message onto the standard
+  `[0, "<message>"]` output via `fail()`.
 - Cross-backend helpers (e.g. `fail()`) currently live in
   `dongniao.py`; factor them into a shared module when the second
   backend actually needs them.
+- Tests live in `tests/` (a plain package, excluded from the wheel).
+  They are offline (no API quota); run them with
+  `uv run python -m unittest discover -s tests`.
 
 ## Language conventions
 
@@ -93,6 +102,7 @@ uv sync                              # keep .venv / uv.lock in sync
 pyright                              # 0 errors (strict)
 uvx ruff check .                     # all checks passed
 uvx ruff format --check .            # no diff
+uv run python -m unittest discover -s tests   # imageprep unit tests pass
 ```
 
 Plus a smoke test of the failure paths (does not consume API quota):
